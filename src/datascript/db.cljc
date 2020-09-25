@@ -4,7 +4,8 @@
     [clojure.walk]
     [clojure.data]
     [me.tonsky.persistent-sorted-set :as set]
-    [me.tonsky.persistent-sorted-set.arrays :as arrays])
+    [me.tonsky.persistent-sorted-set.arrays :as arrays]
+    [dbv.db-util :as db-util])
   #?(:cljs (:require-macros [datascript.db :refer [case-tree combine-cmp raise defrecord-updatable cond+]]))
   (:refer-clojure :exclude [seqable?])) 
 
@@ -571,9 +572,11 @@
     (diff-sorted (:eavt a) (:eavt b) cmp-datoms-eav-quick)))
 
 (defn db? [x]
-  (and (satisfies? ISearch x)
-       (satisfies? IIndexAccess x)
-       (satisfies? IDB x)))
+  (satisfies? IIndexAccess x)
+  ;; TODO:
+  #_(and (satisfies? ISearch x)
+         (satisfies? IIndexAccess x)
+         (satisfies? IDB x)))
 
 ;; ----------------------------------------------------------------------------
 (defrecord-updatable FilteredDB [unfiltered-db pred hash]
@@ -879,15 +882,22 @@
 
 (defn #?@(:clj  [^Boolean multival?]
           :cljs [^boolean multival?]) [db attr]
-  (is-attr? db attr :db.cardinality/many))
+  (= (:cardinality (db-util/attribute db
+                                      attr))
+     :db.cardinality/many))
 
 (defn #?@(:clj  [^Boolean ref?]
           :cljs [^boolean ref?]) [db attr]
-  (is-attr? db attr :db.type/ref))
+  (= (:value-type (db-util/attribute db
+                                     attr))
+     :db.type/ref)
+  )
 
 (defn #?@(:clj  [^Boolean component?]
           :cljs [^boolean component?]) [db attr]
-  (is-attr? db attr :db/isComponent))
+  (:is-component (db-util/attribute db
+                                    attr))
+  )
 
 (defn #?@(:clj  [^Boolean indexing?]
           :cljs [^boolean indexing?]) [db attr]

@@ -94,16 +94,19 @@
          (map :e)
          (into #{}))))
 
+(defrecord DB [])
+
 (defn db
   [{:keys [connectable
            table] :as connection-spec}]
   (let [keys (q-e-idents connection-spec)
         ids (set/map-invert keys)
-        db* {:ids ids
-             :keys keys
-             :connectable connectable
-             :table table
-             :value-columns (bootstrap/value-columns)}]
+        db* (merge (->DB)
+                   {:ids ids
+                    :keys keys
+                    :connectable connectable
+                    :table table
+                    :value-columns (bootstrap/value-columns)})]
     ;; TODO: augment current t
     (assoc db*
            :attribute-types (q-types db*)
