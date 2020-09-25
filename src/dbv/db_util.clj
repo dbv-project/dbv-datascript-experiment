@@ -37,3 +37,7 @@
   (-> (get (:attribute-types db)
            a)
       (name)))
+
+(defn a-column
+  [db a]
+  (keyword (column-name db a)))

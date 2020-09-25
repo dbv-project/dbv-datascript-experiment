@@ -1,5 +1,6 @@
 (ns dbv.api
-  (:require dbv.db))
+  (:require dbv.db
+            dbv.db-util))
 
 ;; Concept:
 ;;
@@ -10,4 +11,4 @@
   dbv.db/db)
 
 (def entid
-  dbv.db/entid)
+  dbv.db-util/entid)

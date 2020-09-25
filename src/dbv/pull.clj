@@ -1,7 +1,8 @@
 (ns dbv.pull
   (:require [next.jdbc :as jdbc]
             [clojure.string :as str]
-            [dbv.db :as db]))
+            [dbv.db :as db]
+            [dbv.db-util :as db-util]))
 
 ;; Concept:
 ;;
@@ -14,19 +15,12 @@
          :attribute-ident (get (:keys db)
                                (:a row))))
 
-(defn a-column
-  [db a]
-  (-> (get (:attribute-types db)
-           a)
-      (name)
-      (keyword)))
-
 (defn add-v
   [db row]
   (assoc row
          :v (get row
-                 (a-column db
-                           (:a row)))))
+                 (db-util/a-column db
+                                   (:a row)))))
 
 (defn complete-row
   [db row]
@@ -88,7 +82,7 @@
          " e = " eid
          " and rx > " tx
          " and tx <= " tx
-         " and a in (" (str/join "," (map (partial db/entid db)
+         " and a in (" (str/join "," (map (partial db-util/entid db)
                                           aidents))  ")"
          )))
 
@@ -100,7 +94,7 @@
    "   select e,a," (str/join "," (map name (:value-columns db)))
    "   from " (:table db)
    " where e in ( "
-   "select ref from l" (dec level) " where a in (" (str/join "," (map (partial db/entid db) aidents)) ")"
+   "select ref from l" (dec level) " where a in (" (str/join "," (map (partial db-util/entid db) aidents)) ")"
    "))")
   )
 

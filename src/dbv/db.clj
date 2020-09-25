@@ -112,12 +112,6 @@
            ))
   )
 
-(defn entid
-  [db ident]
-  (get-in db
-          [:ids
-           ident]))
-
 (comment
   (def connection-spec
     {:connectable (jdbc/get-connection {:dbtype "postgres"
