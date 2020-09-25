@@ -81,6 +81,19 @@
                             :db/cardinality])])
         (e-keyword-map))))
 
+(defn q-is-component
+  [db*]
+  (let [table (:table db*)]
+    (->> (execute! db*
+                   [(str "select e from "
+                         table
+                         " where a = ? and boolean = true")
+                    (get-in db*
+                            [:ids
+                             :db/isComponent])])
+         (map :e)
+         (into #{}))))
+
 (defn db
   [{:keys [connectable
            table] :as connection-spec}]
@@ -95,6 +108,7 @@
     (assoc db*
            :attribute-types (q-types db*)
            :attribute-cardinality (q-cardinality db*)
+           :attribute-components (q-is-component db*)
            ))
   )
 
