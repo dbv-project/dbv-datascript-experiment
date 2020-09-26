@@ -1,8 +1,10 @@
 (ns dbv.id)
 
+(def ^:const tx0 13194139533312)
+
 (defn t->tx
   [t]
-  (bit-or 13194139533312
+  (bit-or tx0
           t))
 
 (comment
@@ -13,12 +15,12 @@
 
 (defn tx->t
   [tx]
-  (bit-xor 13194139533312
+  (bit-xor tx0
            tx)
   )
 
 (comment
-  (tx->t 13194139533312)
+  (tx->t tx0)
   (tx->t 13194139535699)
   )
 
@@ -27,6 +29,9 @@
   (bit-shift-right eid 42))
 
 (comment
-  (part 13194139533312)
+  (part tx0)
   (part 17592186045481)
   )
+
+(def ^:const txmax
+  (t->tx (dec tx0)))

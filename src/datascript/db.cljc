@@ -5,7 +5,8 @@
     [clojure.data]
     [me.tonsky.persistent-sorted-set :as set]
     [me.tonsky.persistent-sorted-set.arrays :as arrays]
-    [dbv.db-util :as db-util])
+    [dbv.db-util :as db-util]
+    [dbv.id :as id])
   #?(:cljs (:require-macros [datascript.db :refer [case-tree combine-cmp raise defrecord-updatable cond+]]))
   (:refer-clojure :exclude [seqable?])) 
 
@@ -18,9 +19,9 @@
      (def UnsupportedOperationException js/Error)))
 
 (def ^:const e0    0)
-(def ^:const tx0   0x20000000)
+(def ^:const tx0   id/tx0)
 (def ^:const emax  Long/MAX_VALUE)
-(def ^:const txmax Long/MAX_VALUE)
+(def ^:const txmax id/txmax)
 (def ^:const implicit-schema {:db/ident {:db/unique :db.unique/identity}})
 
 ;; ----------------------------------------------------------------------------
