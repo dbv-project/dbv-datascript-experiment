@@ -39,7 +39,7 @@
            (datoms-seq db result-set)))
     ))
 
-(defn- datoms-select-sql
+(defn datoms-select-sql
   [db]
   (str "select e,a,"
        (str/join "," (map name (:value-columns db)))
