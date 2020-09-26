@@ -20,7 +20,8 @@
   [db attrid]
   (let [a (entid db
                  attrid)]
-    {:ident (ident db
+    {:id a
+     :ident (ident db
                    attrid)
      :value-type (get-in db
                          [:attribute-types
@@ -35,7 +36,8 @@
 (defn column-name
   [db a]
   (-> (get (:attribute-types db)
-           a)
+           (entid db
+                  a))
       (name)))
 
 (defn a-column
