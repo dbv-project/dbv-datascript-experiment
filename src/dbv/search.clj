@@ -85,26 +85,22 @@
                                           {:clause clause})))]
     (datascript-db/case-tree
      [e a (some? v) tx]
-     [nil ;; e a v tx
-      nil ;; e a v _
-      nil ;; e a _ tx
+     [(not-implemented "e a v tx")                         ;; e a v tx
+      (not-implemented "e a v _")                          ;; e a v _
+      (not-implemented "e a _ tx")                         ;; e a _ tx
       (slice db (datom e a nil tx0) (datom e a nil txmax)) ;; e a _ _
-      nil                                                  ;; e _ v tx
-      nil                                                  ;; e _ v _
-      nil                                                  ;; e _ _ tx
-      nil                                                  ;; e _ _ _
-      nil                                                  ;; _ a v tx
+      (not-implemented "e _ v tx")                         ;; e _ v tx
+      (not-implemented "e _ v _")                          ;; e _ v _
+      (not-implemented "e _ _ tx")                         ;; e _ _ tx
+      (not-implemented "e _ _ _")                          ;; e _ _ _
+      (not-implemented "_ a v tx")                         ;; _ a v tx
       (slice db (datom e0 a v tx0) (datom emax a v txmax)) ;; _ a v _
-      #_(if (indexing? db a)                               ;; _ a v _
-          (set/slice avet (datom e0 a v tx0) (datom emax a v txmax))
-          (->> (set/slice aevt (datom e0 a nil tx0) (datom emax a nil txmax))
-               (filter (fn [^Datom d] (= v (.-v d))))))
-      nil ;; _ a _ tx
+      (not-implemented "_ a _ tx")                         ;; _ a _ tx
       (slice db (datom e0 a nil tx0) (datom emax a nil txmax)) ;; _ a _ _
-      nil ;; _ _ v tx
-      nil ;; _ _ v _
-      nil ;; _ _ _ tx
-      nil ;; _ _ _ _ eavt
+      (not-implemented "_ _ v tx") ;; _ _ v tx
+      (not-implemented "_ _ v _")  ;; _ _ v _
+      (not-implemented "_ _ _ tx") ;; _ _ _ tx
+      (not-implemented "_ _ _ _")  ;; _ _ _ _ eavt
       ])))
 
 (extend-protocol datascript-db/ISearch
