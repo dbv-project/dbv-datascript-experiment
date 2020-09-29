@@ -5,6 +5,7 @@
             [datascript.db :as datascript-db]
             [dbv.db :as db]
             [dbv.db-util :as db-util]
+            [next.jdbc.prepare :as prepare]
             ))
 
 (extend-protocol p/Connectable
@@ -62,15 +63,11 @@
                                                   " and rx > ?"
                                                   " and tx <= ?")
                                              )]
-          (.setLong prepared-st
-                    1
-                    (first components))
-          (.setLong prepared-st
-                    2
-                    (:basis-tx db))
-          (.setLong prepared-st
-                    3
-                    (:basis-tx db))
+          (prepare/set-parameters
+           prepared-st
+           [(first components)
+            (:basis-tx db)
+            (:basis-tx db)])
           (datoms-seq db
                       (.executeQuery prepared-st)))
 
@@ -92,19 +89,13 @@
                 prepared-st (.prepareStatement connection
                                                sql
                                                )]
-            (.setLong prepared-st
-                      1
-                      e)
-            (.setLong prepared-st
-                      2
-                      (db-util/entid db
-                                     a))
-            (.setLong prepared-st
-                      3
-                      (:basis-tx db))
-            (.setLong prepared-st
-                      4
-                      (:basis-tx db))
+            (prepare/set-parameters
+             prepared-st
+             [e
+              (db-util/entid db
+                             a)
+              (:basis-tx db)
+              (:basis-tx db)])
             (datoms-seq db
                         (.executeQuery prepared-st)))
           ))
