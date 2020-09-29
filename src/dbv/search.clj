@@ -86,7 +86,7 @@
     (datascript-db/case-tree
      [e a (some? v) tx]
      [(not-implemented "e a v tx")                         ;; e a v tx
-      (not-implemented "e a v _")                          ;; e a v _
+      (slice db (datom e a v tx0) (datom e a v txmax))     ;; e a v _
       (not-implemented "e a _ tx")                         ;; e a _ tx
       (slice db (datom e a nil tx0) (datom e a nil txmax)) ;; e a _ _
       (not-implemented "e _ v tx")                         ;; e _ v tx
@@ -152,7 +152,7 @@
   (time
    (q/q '[:find ?e .
           :where
-          [?e :design/uuid  #uuid "5f4e10f1-7100-459c-82f5-7d3bc83914a5"]]
+          [?e :design/uuid #uuid "5f4e10f1-7100-459c-82f5-7d3bc83914a5"]]
         db))
 
 
@@ -166,6 +166,12 @@
    (q/q '[:find ?e ?v
           :where
           [?e :design/uuid ?v]]
+        db))
+
+  (time
+   (q/q '[:find ?tx
+          :where
+          [17592186045569 :design/uuid #uuid "5f4e10f1-7100-459c-82f5-7d3bc83914a5" ?tx]]
         db))
 
   )
