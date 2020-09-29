@@ -3,7 +3,8 @@
             [next.jdbc :as jdbc]
             [dbv.db-util :as db-util]
             [dbv.datoms :as datoms]
-            [dbv.bootstrap :as bootstrap]))
+            [dbv.bootstrap :as bootstrap]
+            [next.jdbc.prepare :as prepare]))
 
 (defn slice
   [db from to]
@@ -30,27 +31,18 @@
             serialize (get-in bootstrap/types
                               [db-type
                                :serialize])]
-        (.setLong prepared-st
-                  1
-                  (db-util/entid db
-                                 (:a from)))
-        (.setLong prepared-st
-                  2
-                  (db-util/entid db
-                                 (:a to)))
-        (.setObject prepared-st
-                    3
-                    (serialize (:v from)))
-        (.setObject prepared-st
-                    4
-                    (serialize (:v to)))
-        (.setLong prepared-st
-                  5
-                  (:basis-tx db))
-        (.setLong prepared-st
-                  6
-                  (:basis-tx db))
-        (println (.toString prepared-st))
+        (prepare/set-parameters
+         prepared-st
+         [(db-util/entid db
+                         (:a from))
+          (db-util/entid db
+                         (:a to))
+          (serialize (:v from))
+          (serialize (:v to))
+          (:basis-tx db)
+          (:basis-tx db)
+          ])
+        ;; (println (.toString prepared-st))
         (datoms/datoms-seq db
                            (.executeQuery prepared-st)))
       )))
