@@ -32,8 +32,9 @@
                        (when (:e from)
                          ["e >= ?"
                           "e <= ?"])
-                       ["a >= ?"
-                        "a = ?"]
+                       (when (:a from)
+                         ["a >= ?"
+                          "a = ?"])
                        (when (:v from)
                          [(str value-column " >= ?")
                           (str value-column " <= ?")])
@@ -55,10 +56,11 @@
             [(:e from)
              (:e to)])
 
-          [(db-util/entid db
-                          (:a from))
-           (db-util/entid db
-                          (:a to))]
+          (when (:a from)
+            [(db-util/entid db
+                            (:a from))
+             (db-util/entid db
+                            (:a to))])
 
           (when (:v from)
             [(serialize (:v from))
@@ -77,8 +79,10 @@
   (let [[e a v tx] pattern
         multival? (= (:cardinality (db-util/attribute db
                                                       a))
-                     :db.cardinality/many)]
-    (prn [e a (some? v) tx])
+                     :db.cardinality/many)
+        not-implemented (fn [clause]
+                          (throw (ex-info "not-implemented"
+                                          {:clause clause})))]
     (datascript-db/case-tree
      [e a (some? v) tx]
      [nil ;; e a v tx
@@ -96,7 +100,7 @@
           (->> (set/slice aevt (datom e0 a nil tx0) (datom emax a nil txmax))
                (filter (fn [^Datom d] (= v (.-v d))))))
       nil ;; _ a _ tx
-      nil ;; _ a _ _
+      (slice db (datom e0 a nil tx0) (datom emax a nil txmax)) ;; _ a _ _
       nil ;; _ _ v tx
       nil ;; _ _ v _
       nil ;; _ _ _ tx
@@ -162,5 +166,10 @@
           [17592186045569 :design/uuid ?uuid]]
         db))
 
+  (time
+   (q/q '[:find ?e ?v
+          :where
+          [?e :design/uuid ?v]]
+        db))
 
   )
