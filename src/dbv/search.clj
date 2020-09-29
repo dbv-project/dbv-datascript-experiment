@@ -4,7 +4,8 @@
             [dbv.db-util :as db-util]
             [dbv.datoms :as datoms]
             [dbv.bootstrap :as bootstrap]
-            [next.jdbc.prepare :as prepare]))
+            [next.jdbc.prepare :as prepare]
+            [clojure.string :as str]))
 
 (defn slice
   [db from to]
@@ -12,16 +13,32 @@
                      (.setAutoCommit false))]
     (let [statement (doto (.createStatement connection)
                       (.setFetchSize 50))]
-      (let [value-column (db-util/column-name db
-                                              (:a from))
-            sql (str (datoms/datoms-select-sql db)
-                     " where"
-                     " a >= ?"
-                     " and a <= ?"
-                     " and " value-column " >= ?"
-                     " and " value-column " <= ?"
-                     " and rx > ?"
-                     " and tx <= ?")
+      (let [value-column (when (:a from)
+                           (db-util/column-name db
+                                                (:a from)))
+            sql (str "select e,a,"
+                     ;; If the attribute is defined then only select
+                     ;; the corresponding value column, to allow a
+                     ;; Postgres Index Only Scan:
+                     (or value-column
+                         (str/join "," (map name (:value-columns db))))
+                     ",rx,tx"
+                     " from " (:table db)
+                     " "
+                     " where "
+                     (str/join
+                      " and "
+                      (concat
+                       (when (:e from)
+                         ["e >= ?"
+                          "e <= ?"])
+                       ["a >= ?"
+                        "a = ?"]
+                       (when (:v from)
+                         [(str value-column " >= ?")
+                          (str value-column " <= ?")])
+                       ["rx > ?"
+                        "tx <= ?"])))
             prepared-st (.prepareStatement
                          connection
                          sql
@@ -33,15 +50,23 @@
                                :serialize])]
         (prepare/set-parameters
          prepared-st
-         [(db-util/entid db
-                         (:a from))
-          (db-util/entid db
-                         (:a to))
-          (serialize (:v from))
-          (serialize (:v to))
-          (:basis-tx db)
-          (:basis-tx db)
-          ])
+         (concat
+          (when (:e from)
+            [(:e from)
+             (:e to)])
+
+          [(db-util/entid db
+                          (:a from))
+           (db-util/entid db
+                          (:a to))]
+
+          (when (:v from)
+            [(serialize (:v from))
+             (serialize (:v to))])
+
+          [(:basis-tx db)
+           (:basis-tx db)]
+          ))
         ;; (println (.toString prepared-st))
         (datoms/datoms-seq db
                            (.executeQuery prepared-st)))
@@ -56,26 +81,26 @@
     (prn [e a (some? v) tx])
     (datascript-db/case-tree
      [e a (some? v) tx]
-     [nil   ;; e a v tx
-      nil   ;; e a v _
-      nil   ;; e a _ tx
-      nil   ;; e a _ _
-      nil   ;; e _ v tx
-      nil   ;; e _ v _
-      nil   ;; e _ _ tx
-      nil   ;; e _ _ _
-      nil   ;; _ a v tx
+     [nil ;; e a v tx
+      nil ;; e a v _
+      nil ;; e a _ tx
+      (slice db (datom e a nil tx0) (datom e a nil txmax)) ;; e a _ _
+      nil                                                  ;; e _ v tx
+      nil                                                  ;; e _ v _
+      nil                                                  ;; e _ _ tx
+      nil                                                  ;; e _ _ _
+      nil                                                  ;; _ a v tx
       (slice db (datom e0 a v tx0) (datom emax a v txmax)) ;; _ a v _
       #_(if (indexing? db a)                               ;; _ a v _
           (set/slice avet (datom e0 a v tx0) (datom emax a v txmax))
           (->> (set/slice aevt (datom e0 a nil tx0) (datom emax a nil txmax))
                (filter (fn [^Datom d] (= v (.-v d))))))
-      nil   ;; _ a _ tx
-      nil   ;; _ a _ _
-      nil   ;; _ _ v tx
-      nil   ;; _ _ v _
-      nil   ;; _ _ _ tx
-      nil   ;; _ _ _ _ eavt
+      nil ;; _ a _ tx
+      nil ;; _ a _ _
+      nil ;; _ _ v tx
+      nil ;; _ _ v _
+      nil ;; _ _ _ tx
+      nil ;; _ _ _ _ eavt
       ])))
 
 (extend-protocol datascript-db/ISearch
@@ -85,27 +110,29 @@
             pattern)))
 
 (comment
-  (def data-source
-    (jdbc/get-datasource {:dbtype "postgres"
-                          :dbname "postgres"
-                          :user "postgres"
-                          :password "postgres"}))
+  (do
+    (def data-source
+      (jdbc/get-datasource {:dbtype "postgres"
+                            :dbname "postgres"
+                            :user "postgres"
+                            :password "postgres"}))
 
-  (def connection
-    (doto (jdbc/get-connection data-source)
-      (.setAutoCommit false)))
+    (def connection
+      (doto (jdbc/get-connection data-source)
+        (.setAutoCommit false)))
 
-  (require '[dbv.db :as db])
+    (require '[dbv.db :as db])
 
-  (def db
-    (-> (db/db {:connectable connection
-                :table "eavrt"})
-        (assoc :basis-tx 13194139535699)))
+    (def db
+      (-> (db/db {:connectable connection
+                  :table "eavrt"})
+          (assoc :basis-tx 13194139535699)))
 
-  (require '[datascript.query :as q])
+    (require '[datascript.query :as q])
+    )
 
   (time
-   (q/q '[:find ?e
+   (q/q '[:find [?e ...]
           :where
           [?e :design/name "Feed Square"]]
         db))
@@ -117,9 +144,23 @@
         db))
 
   (time
-   (q/q '[:find (pull ?e [:design/name :design/audio-selection])
+   (q/q '[:find (pull ?e [:design/name :design/audio-selection :design/uuid])
           :where
           [?e :design/created-at #inst "2020-09-01T09:14:28.752-00:00"]]
         db))
+
+  (time
+   (q/q '[:find ?e .
+          :where
+          [?e :design/uuid  #uuid "5f4e10f1-7100-459c-82f5-7d3bc83914a5"]]
+        db))
+
+
+  (time
+   (q/q '[:find ?uuid .
+          :where
+          [17592186045569 :design/uuid ?uuid]]
+        db))
+
 
   )
