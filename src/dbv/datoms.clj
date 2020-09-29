@@ -76,13 +76,21 @@
 
         2
         (let [[e a] components]
-          (let [prepared-st (.prepareStatement connection
-                                               (str (datoms-select-sql db)
-                                                    " where"
-                                                    " e = ?"
-                                                    " and a = ?"
-                                                    " and rx > ?"
-                                                    " and tx <= ?")
+          (let [sql (str "select e,a,"
+                         ;; only select the value-column of the given
+                         ;; `a` here, thereby Postgres will use an
+                         ;; Index Only Scan:
+                         (db-util/column-name db
+                                              a)
+                         ",rx,tx"
+                         " from " (:table db)
+                         " where"
+                         " e = ?"
+                         " and a = ?"
+                         " and rx > ?"
+                         " and tx <= ?")
+                prepared-st (.prepareStatement connection
+                                               sql
                                                )]
             (.setLong prepared-st
                       1
