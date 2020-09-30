@@ -31,6 +31,9 @@
      :cardinality (get-in db
                           [:attribute-cardinality
                            a])
+     :unique (get-in db
+                     [:attribute-unique
+                      a])
      }))
 
 (defn column-name
