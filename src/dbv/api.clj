@@ -1,7 +1,8 @@
 (ns dbv.api
   (:require dbv.db
             dbv.db-util
-            dbv.datoms))
+            dbv.datoms
+            dbv.search))
 
 ;; Concept:
 ;;
