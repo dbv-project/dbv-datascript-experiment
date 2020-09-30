@@ -92,7 +92,7 @@
       (not-implemented "e _ v tx")                         ;; e _ v tx
       (not-implemented "e _ v _")                          ;; e _ v _
       (not-implemented "e _ _ tx")                         ;; e _ _ tx
-      (not-implemented "e _ _ _")                          ;; e _ _ _
+      (slice db (datom e nil nil tx0) (datom e nil nil txmax)) ;; e _ _ _
       (not-implemented "_ a v tx")                         ;; _ a v tx
       (slice db (datom e0 a v tx0) (datom emax a v txmax)) ;; _ a v _
       (not-implemented "_ a _ tx")                         ;; _ a _ tx
@@ -172,6 +172,12 @@
    (q/q '[:find ?tx
           :where
           [17592186045569 :design/uuid #uuid "5f4e10f1-7100-459c-82f5-7d3bc83914a5" ?tx]]
+        db))
+
+  (time
+   (q/q '[:find ?a ?v
+          :where
+          [17592186045569 ?a ?v]]
         db))
 
   )
