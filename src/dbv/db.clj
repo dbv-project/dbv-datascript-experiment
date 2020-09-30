@@ -81,6 +81,27 @@
                             :db/cardinality])])
         (e-keyword-map))))
 
+(defn q-unique
+  [db*]
+  (let [a-ident (get-in db*
+                        [:ids
+                         :db/ident])
+        table (:table db*)]
+    (-> (execute! db*
+                  [(str "select a.e, b.keyword from "
+                        table
+                        " a inner join "
+                        table
+                        " b on a.ref = b.e and b.a = ? where a.e in (select e from "
+                        table
+                        " where a = ?) and a.a = ?")
+                   a-ident
+                   a-ident
+                   (get-in db*
+                           [:ids
+                            :db/unique])])
+        (e-keyword-map))))
+
 (defn q-is-component
   [db*]
   (let [table (:table db*)]
@@ -96,6 +117,52 @@
 
 (defrecord DB [])
 
+(defn rschema
+  [db]
+  {
+   :db/unique (into #{}
+                    (map (:keys db))
+                    (keys (:attribute-unique db)))
+   :db.unique/identity (into #{}
+                             (comp
+                              (keep (fn [[eid db-unique]]
+                                      (when (= db-unique
+                                               :db.unique/identity)
+                                        eid)))
+                              (map (:keys db)))
+                             (:attribute-unique db))
+   :db.unique/value (into #{}
+                          (comp
+                           (keep (fn [[eid db-unique]]
+                                   (when (= db-unique
+                                            :db.unique/value)
+                                     eid)))
+                           (map (:keys db)))
+                          (:attribute-unique db))
+   ;; :db/index
+   :db.cardinality/many (into #{}
+                              (comp
+                               (keep (fn [[eid db-cardinality]]
+                                       (when (= db-cardinality
+                                                :db.cardinality/many)
+                                         eid)))
+                               (map (:keys db)))
+                              (:attribute-cardinality db))
+   :db.type/ref (into #{}
+                      (comp
+                       (keep (fn [[eid db-type]]
+                               (when (= db-type
+                                        :db.type/ref)
+                                 eid)))
+                       (map (:keys db)))
+                      (:attribute-types db))
+   :db/isComponent (into #{}
+                         (map (:keys db))
+                         (:attribute-components db))
+   ;; :db.type/tuple
+   ;; :db/attrTuples
+   })
+
 (defn db
   [{:keys [connectable
            table] :as connection-spec}]
@@ -106,13 +173,17 @@
                     :keys keys
                     :connectable connectable
                     :table table
-                    :value-columns (bootstrap/value-columns)})]
+                    :value-columns (bootstrap/value-columns)})
+        db** (assoc db*
+                    :attribute-types (q-types db*)
+                    :attribute-cardinality (q-cardinality db*)
+                    :attribute-components (q-is-component db*)
+                    :attribute-unique (q-unique db*)
+                    )]
     ;; TODO: augment current t
-    (assoc db*
-           :attribute-types (q-types db*)
-           :attribute-cardinality (q-cardinality db*)
-           :attribute-components (q-is-component db*)
-           ))
+    (assoc db**
+           :rschema (rschema db**))
+    )
   )
 
 (comment
