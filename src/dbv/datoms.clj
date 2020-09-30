@@ -130,14 +130,7 @@
   dbv.db.DB
   (-schema [db])
   (-attrs-by [db property]
-    (case property
-      :db.type/ref
-      (= (:value-type (db-util/attribute db
-                                         property))
-         :db.type/ref)
-      :db.cardinality/many
-      (:is-component (db-util/attribute db
-                                        property))))
+    ((:rschema db) property))
   )
 
 (comment
