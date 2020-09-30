@@ -40,76 +40,54 @@
            (datoms-seq db result-set)))
     ))
 
-(defn datoms-select-sql
-  [db]
-  (str "select e,a,"
-       (str/join "," (map name (:value-columns db)))
-       ",rx,tx"
-       " from " (:table db)
-       " "))
-
-(defn- datoms-eavt
-  [db index & components]
-  (let [connection (doto (jdbc/get-connection (:connectable db))
-                     (.setAutoCommit false))]
-    (let [statement (doto (.createStatement connection)
-                      (.setFetchSize 50))]
-      (case (count components)
-        1
-        (let [prepared-st (.prepareStatement connection
-                                             (str (datoms-select-sql db)
-                                                  " where"
-                                                  " e = ?"
-                                                  " and rx > ?"
-                                                  " and tx <= ?")
-                                             )]
-          (prepare/set-parameters
-           prepared-st
-           [(first components)
-            (:basis-tx db)
-            (:basis-tx db)])
-          (datoms-seq db
-                      (.executeQuery prepared-st)))
-
-        2
-        (let [[e a] components]
-          (let [sql (str "select e,a,"
-                         ;; only select the value-column of the given
-                         ;; `a` here, thereby Postgres will use an
-                         ;; Index Only Scan:
-                         (db-util/column-name db
-                                              a)
-                         ",rx,tx"
-                         " from " (:table db)
-                         " where"
-                         " e = ?"
-                         " and a = ?"
-                         " and rx > ?"
-                         " and tx <= ?")
-                prepared-st (.prepareStatement connection
-                                               sql
-                                               )]
-            (prepare/set-parameters
-             prepared-st
-             [e
-              (db-util/entid db
-                             a)
-              (:basis-tx db)
-              (:basis-tx db)])
-            (datoms-seq db
-                        (.executeQuery prepared-st)))
-          ))
-
-      )))
-
 (defn datoms
   [db index & components]
-  (case index
-    :eavt
-    (apply datoms-eavt
-           db
-           index
-           components)))
+  (let [[c0 c1 c2 c3 c4] components
+        [e a v t added] (case index
+                          :eavt
+                          components
+                          :avet
+                          [c2 c0 c1 c3 c4])
+        a (db-util/entid db
+                         a)
+        connection (doto (jdbc/get-connection (:connectable db))
+                     (.setAutoCommit false))]
+    (let [statement (doto (.createStatement connection)
+                      (.setFetchSize 50))
+          prepared-st (.prepareStatement connection
+                                         (str "select e,a,"
+                                              (if a
+                                                (db-util/column-name db
+                                                                     a)
+                                                (str/join "," (map name (:value-columns db))))
+                                              ",rx,tx"
+                                              " from " (:table db)
+                                              " where "
+                                              (str/join
+                                               " and "
+                                               (remove nil?
+                                                       [(when e
+                                                          "e = ?")
+                                                        (when a
+                                                          "a = ?")
+                                                        (when v
+                                                          (str (db-util/column-name db
+                                                                                    a)
+                                                               " = ?"))
+                                                        "rx > ?"
+                                                        "tx <= ?"]))))]
+      (prepare/set-parameters
+       prepared-st
+       (remove nil?
+               [e
+                a
+                v
+                (:basis-tx db)
+                (:basis-tx db)]))
+      (datoms-seq db
+                  (.executeQuery prepared-st))
+
+      )))
 
 (extend-protocol datascript-db/IIndexAccess
   dbv.db.DB
