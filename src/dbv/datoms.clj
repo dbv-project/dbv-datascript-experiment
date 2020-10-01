@@ -6,6 +6,7 @@
             [dbv.db :as db]
             [dbv.db-util :as db-util]
             [next.jdbc.prepare :as prepare]
+            [dbv.bootstrap :as bootstrap]
             ))
 
 (extend-protocol p/Connectable
@@ -20,15 +21,20 @@
 (defn extract-datom
   [db ^java.sql.ResultSet result-set]
   (let [a (.getLong result-set
-                    "a")]
+                    "a")
+        value-type (db-util/value-type db
+                                       a)
+        deserialize (get-in bootstrap/types
+                            [value-type
+                             :deserialize])]
     (datascript-db/datom (.getLong result-set
                                    "e")
-                         (:ident (db-util/attribute db
-                                                    a))
-                         (.getObject result-set
-                                     ^String
-                                     (db-util/column-name db
-                                                          a))
+                         (db-util/ident db
+                                        a)
+                         (-> (.getObject result-set
+                                         ^String
+                                         (name value-type))
+                             (deserialize))
                          (.getLong result-set
                                    "tx")
                          true
