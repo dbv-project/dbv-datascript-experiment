@@ -95,6 +95,12 @@
   (sort (map (comp keyword name)
              (keys types))))
 
+(defn all-columns
+  []
+  (concat
+   [:id :e :a :rx :tx]
+   (value-columns)))
+
 (defn create-ea-index!
   [{:keys [connectable table]}]
   (jdbc/execute!
