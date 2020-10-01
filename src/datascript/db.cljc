@@ -915,7 +915,7 @@
 (defn entid [db eid]
   {:pre [(db? db)]}
   (cond
-    (and (number? eid) (pos? eid))
+    (and (number? eid) (>= eid 0))
     (if (> eid emax)
       (raise "Highest supported entity id is " emax ", got " eid {:error :entity-id :value eid})
       eid)
