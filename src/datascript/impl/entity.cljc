@@ -1,7 +1,8 @@
 (ns ^:no-doc datascript.impl.entity
   (:refer-clojure :exclude [keys get])
   (:require [#?(:cljs cljs.core :clj clojure.core) :as c]
-            [datascript.db :as db]))
+            [datascript.db :as db]
+            [dbv.db-util :as db-util]))
 
 (declare entity ->Entity equiv-entity lookup-entity touch)
 
@@ -156,6 +157,13 @@
    ;; (= db  (.-db ^Entity that))
    (= (.-eid this) (.-eid ^Entity that))))
 
+(defn- resolve-ident
+  [db v]
+  (or (db-util/ident db
+                     (:db/id v))
+      v)
+  )
+
 (defn- lookup-entity
   ([this attr] (lookup-entity this attr nil))
   ([^Entity this attr not-found]
@@ -168,7 +176,12 @@
          (if @(.-touched this)
            not-found
            (if-some [datoms (not-empty (db/-search (.-db this) [(.-eid this) attr]))]
-             (let [value (entity-attr (.-db this) attr datoms)]
+             (let [v (entity-attr (.-db this) attr datoms)
+                   value (if (db/ref? (.-db this)
+                                      attr)
+                           (resolve-ident (.-db this)
+                                          v)
+                           v)]
                (vreset! (.-cache this) (assoc @(.-cache this) attr value))
                value)
              not-found)))))))
@@ -176,11 +189,18 @@
 (defn touch-components [db a->v]
   (reduce-kv (fn [acc a v]
                (assoc acc a
-                 (if (db/component? db a)
-                   (if (db/multival? db a)
-                     (set (map touch v))
-                     (touch v))
-                   v)))
+                      (if (db/component? db a)
+                        (if (db/multival? db a)
+                          (set (map touch v))
+                          (touch v))
+                        (if (db/ref? db a)
+                          (if (db/multival? db a)
+                            (set (map (partial resolve-ident
+                                               db)
+                                      v))
+                            (resolve-ident db
+                                           v))
+                          v))))
              {} a->v))
 
 (defn- datoms->cache [db datoms]

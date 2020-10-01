@@ -37,4 +37,13 @@
    (e/entity db
              [:audio/uuid #uuid "5f4e107c-78c6-48b1-b9fd-c3ff0e295cb3"]))
 
+  (:db/valueType (e/entity db
+                           :db/valueType))
+
+  (e/touch (e/entity db
+                     :db/valueType))
+
+  (e/touch (e/entity db
+                     0))
+
   )
