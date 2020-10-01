@@ -36,11 +36,16 @@
                       a])
      }))
 
+(defn value-type
+  [db a]
+  (get (:attribute-types db)
+       (entid db
+              a)))
+
 (defn column-name
   [db a]
-  (-> (get (:attribute-types db)
-           (entid db
-                  a))
+  (-> (value-type db
+                  a)
       (name)))
 
 (defn a-column
