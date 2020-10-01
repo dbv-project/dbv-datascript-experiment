@@ -13,7 +13,7 @@
   (get-connection [this opts] this))
 
 (defn extract-datom
-  [db result-set]
+  [db ^java.sql.ResultSet result-set]
   (let [a (.getLong result-set
                     "a")]
     (datascript-db/datom (.getLong result-set
@@ -21,6 +21,7 @@
                          (:ident (db-util/attribute db
                                                     a))
                          (.getObject result-set
+                                     ^String
                                      (db-util/column-name db
                                                           a))
                          (.getLong result-set
@@ -32,7 +33,7 @@
                               Long/MAX_VALUE))))
 
 (defn datoms-seq
-  [db result-set]
+  [db ^java.sql.ResultSet result-set]
   (when (.next result-set)
     (lazy-seq
      (cons (extract-datom db
