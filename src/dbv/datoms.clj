@@ -12,6 +12,11 @@
   java.sql.Connection
   (get-connection [this opts] this))
 
+(extend-protocol prepare/SettableParameter
+  clojure.lang.Keyword
+  (set-parameter [v ^java.sql.PreparedStatement s ^long i]
+    (.setString s i (pr-str v))))
+
 (defn extract-datom
   [db ^java.sql.ResultSet result-set]
   (let [a (.getLong result-set
