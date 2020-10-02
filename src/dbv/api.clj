@@ -17,3 +17,6 @@
 
 (def datoms
   dbv.datoms/datoms)
+
+(def squuid
+  dbv.db-util/squuid)
