@@ -9,6 +9,8 @@
 
 (defn slice
   [db from to]
+  ;; NOTE: `(.setAutoCommit false)` and `(.setFetchSize 50)` are used
+  ;;       to receive a cursor from the database (see: https://jdbc.postgresql.org/documentation/head/query.html#query-with-cursor)
   (let [connection (doto (jdbc/get-connection (:connectable db))
                      (.setAutoCommit false))]
     (let [statement (doto (.createStatement connection)
