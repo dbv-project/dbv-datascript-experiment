@@ -45,11 +45,12 @@
 
 (defn datoms-seq
   [db ^java.sql.ResultSet result-set]
-  (when (.next result-set)
+  (if (.next result-set)
     (lazy-seq
      (cons (extract-datom db
                           result-set)
            (datoms-seq db result-set)))
+    (.close result-set)
     ))
 
 (defn datoms
