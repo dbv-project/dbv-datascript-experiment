@@ -128,11 +128,22 @@
                          value-column
                          " is not null;")])))
 
+(defn create-vaet-index!
+  [{:keys [connectable table]}]
+  (jdbc/execute! connectable
+                 [(str "CREATE INDEX "
+                       "dbv_" table "_vaet"
+                       " ON "
+                       table
+                       " (ref,a,e,rx,tx) where "
+                       " ref is not null;")]))
+
 (defn bootstrap!
   [{:keys [connectable table] :as params}]
   (create-table! params)
   (create-ea-index! params)
   (create-eav-indexes! params)
+  (create-vaet-index! params)
   )
 
 (comment
